@@ -149,7 +149,7 @@ static inline constexpr int handler_entry_dispatch_lowbits(int highbits, int wid
 		return 32;
 	if(highbits > 14)
 		return 14;
-	return width - ashift;
+	return width + ashift;
 }
 
 class handler_entry_new
@@ -183,7 +183,16 @@ public:
 	~handler_entry_read_new() {}
 
 	virtual UINTX read(offs_t offset, UINTX mem_mask) = 0;
-	virtual void populate(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler);
+	inline void populate(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler) {
+		if(mirror)
+			populate_mirror(start, end, mirror, handler);
+		else
+			populate_nomirror(start, end, handler);
+	}
+
+	virtual void populate_nomirror(offs_t start, offs_t end, handler_entry_read_new<_width_, _ashift_> *handler);
+	virtual void populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler);
+
 };
 
 template<int _width_, int _ashift_> class handler_entry_write_new : public handler_entry_new
@@ -195,7 +204,16 @@ public:
 	virtual ~handler_entry_write_new() {}
 
 	virtual void write(offs_t offset, UINTX data, UINTX mem_mask) = 0;
-	virtual void populate(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler);
+
+	inline void populate(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler) {
+		if(mirror)
+			populate_mirror(start, end, mirror, handler);
+		else
+			populate_nomirror(start, end, handler);
+	}
+
+	virtual void populate_nomirror(offs_t start, offs_t end, handler_entry_write_new<_width_, _ashift_> *handler);
+	virtual void populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler);
 };
 
 template<int _width_, int _ashift_> class handler_entry_read_terminal_new : public handler_entry_read_new<_width_, _ashift_>
@@ -260,6 +278,37 @@ public:
 private:
 	UINTX *m_base;
 };
+
+template<int _width_, int _ashift_> class handler_entry_read_memory_bank_new : public handler_entry_read_terminal_new<_width_, _ashift_>
+{
+public:
+	typedef typename handler_entry_size<_width_>::UINTX UINTX;
+	typedef handler_entry_read_terminal_new<_width_,_ashift_> inh;
+
+	handler_entry_read_memory_bank_new(address_space *space, memory_bank &bank) : handler_entry_read_terminal_new<_width_, _ashift_>(space, 0), m_bank(bank) {}
+	~handler_entry_read_memory_bank_new() {}
+
+	UINTX read(offs_t offset, UINTX mem_mask) override;
+
+private:
+	memory_bank &m_bank;
+};
+
+template<int _width_, int _ashift_> class handler_entry_write_memory_bank_new : public handler_entry_write_terminal_new<_width_, _ashift_>
+{
+public:
+	typedef typename handler_entry_size<_width_>::UINTX UINTX;
+	typedef handler_entry_write_terminal_new<_width_,_ashift_> inh;
+
+	handler_entry_write_memory_bank_new(address_space *space, memory_bank &bank) : handler_entry_write_terminal_new<_width_, _ashift_>(space, 0), m_bank(bank) {}
+	~handler_entry_write_memory_bank_new() {}
+
+	void write(offs_t offset, UINTX data, UINTX mem_mask) override;
+
+private:
+	memory_bank &m_bank;
+};
+
 
 template<int _width_, int _ashift_> class handler_entry_read_single_new : public handler_entry_read_terminal_new<_width_, _ashift_>
 {
@@ -420,14 +469,17 @@ public:
 	~handler_entry_read_dispatch_new();
 
 	UINTX read(offs_t offset, UINTX mem_mask) override;
-	void populate(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler) override;
+
+	void populate_nomirror(offs_t start, offs_t end, handler_entry_read_new<_width_, _ashift_> *handler) override;
+	void populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler) override;
 
 protected:
 	enum {
 		_lowbits_ = handler_entry_dispatch_lowbits(_highbits_, _width_, _ashift_),
 		BITCOUNT  = _highbits_ - _lowbits_ + 1,
 		BITMASK   = (1 << BITCOUNT) - 1,
-		COUNT     = 1 << BITCOUNT
+		COUNT     = 1 << BITCOUNT,
+		BOTTOM    = (1 << _lowbits_) - 1
 	};
 
 	handler_entry_read_new<_width_, _ashift_> *m_dispatch[COUNT];
@@ -443,14 +495,17 @@ public:
 	~handler_entry_write_dispatch_new();
 
 	void write(offs_t offset, UINTX data, UINTX mem_mask) override;
-	void populate(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler) override;
+
+	void populate_nomirror(offs_t start, offs_t end, handler_entry_write_new<_width_, _ashift_> *handler) override;
+	void populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler) override;
 
 protected:
 	enum {
 		_lowbits_ = handler_entry_dispatch_lowbits(_highbits_, _width_, _ashift_),
 		BITCOUNT  = _highbits_ - _lowbits_ + 1,
 		BITMASK   = (1 << BITCOUNT) - 1,
-		COUNT     = 1 << BITCOUNT
+		COUNT     = 1 << BITCOUNT,
+		BOTTOM    = (1 << _lowbits_) - 1
 	};
 
 	handler_entry_write_new<_width_, _ashift_> *m_dispatch[COUNT];

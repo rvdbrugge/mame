@@ -255,12 +255,22 @@ enum
 
 
 
-template<int _width_, int _ashift_> void handler_entry_read_new<_width_, _ashift_>::populate(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler)
+template<int _width_, int _ashift_> void handler_entry_read_new<_width_, _ashift_>::populate_nomirror(offs_t start, offs_t end, handler_entry_read_new<_width_, _ashift_> *handler)
 {
 	fatalerror("populate called on non-dispatching class\n");
 }
 
-template<int _width_, int _ashift_> void handler_entry_write_new<_width_, _ashift_>::populate(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler)
+template<int _width_, int _ashift_> void handler_entry_read_new<_width_, _ashift_>::populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler)
+{
+	fatalerror("populate called on non-dispatching class\n");
+}
+
+template<int _width_, int _ashift_> void handler_entry_write_new<_width_, _ashift_>::populate_nomirror(offs_t start, offs_t end, handler_entry_write_new<_width_, _ashift_> *handler)
+{
+	fatalerror("populate called on non-dispatching class\n");
+}
+
+template<int _width_, int _ashift_> void handler_entry_write_new<_width_, _ashift_>::populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler)
 {
 	fatalerror("populate called on non-dispatching class\n");
 }
@@ -282,27 +292,21 @@ template<> void handler_entry_write_memory_new<0, 0>::write(offs_t offset, UINT8
 }
 
 
-template class handler_entry_read_memory_new<0, 0>;
-template class handler_entry_read_memory_new<1, 0>;
-template class handler_entry_read_memory_new<2, 0>;
-template class handler_entry_read_memory_new<3, 0>;
-template class handler_entry_read_memory_new<1, 1>;
-template class handler_entry_read_memory_new<2, 1>;
-template class handler_entry_read_memory_new<3, 1>;
-template class handler_entry_read_memory_new<2, 2>;
-template class handler_entry_read_memory_new<3, 2>;
-template class handler_entry_read_memory_new<3, 3>;
+template<int _width_, int _ashift_> typename handler_entry_size<_width_>::UINTX handler_entry_read_memory_bank_new<_width_, _ashift_>::read(offs_t offset, UINTX mem_mask)
+{
+	return static_cast<UINTX *>(m_bank.base())[((offset - inh::m_address_base) & inh::m_address_mask) >> (_width_ - _ashift_)];
+}
 
-template class handler_entry_write_memory_new<0, 0>;
-template class handler_entry_write_memory_new<1, 0>;
-template class handler_entry_write_memory_new<2, 0>;
-template class handler_entry_write_memory_new<3, 0>;
-template class handler_entry_write_memory_new<1, 1>;
-template class handler_entry_write_memory_new<2, 1>;
-template class handler_entry_write_memory_new<3, 1>;
-template class handler_entry_write_memory_new<2, 2>;
-template class handler_entry_write_memory_new<3, 2>;
-template class handler_entry_write_memory_new<3, 3>;
+template<int _width_, int _ashift_> void handler_entry_write_memory_bank_new<_width_, _ashift_>::write(offs_t offset, UINTX data, UINTX mem_mask)
+{
+	offs_t off = ((offset - inh::m_address_base) & inh::m_address_mask) >> (_width_ - _ashift_);
+	static_cast<UINTX *>(m_bank.base())[off] = (static_cast<UINTX *>(m_bank.base())[off] & ~mem_mask) | (data & mem_mask);
+}
+
+template<> void handler_entry_write_memory_bank_new<0, 0>::write(offs_t offset, UINT8 data, UINT8 mem_mask)
+{
+	static_cast<UINTX *>(m_bank.base())[(offset - inh::m_address_base) & inh::m_address_mask] = data;
+}
 
 
 
@@ -317,30 +321,6 @@ template<int _width_, int _ashift_> void handler_entry_write_single_new<_width_,
 {
 	m_delegate(*inh::m_space, offset, data, mem_mask);
 }
-
-
-template class handler_entry_read_single_new<0, 0>;
-template class handler_entry_read_single_new<1, 0>;
-template class handler_entry_read_single_new<2, 0>;
-template class handler_entry_read_single_new<3, 0>;
-template class handler_entry_read_single_new<1, 1>;
-template class handler_entry_read_single_new<2, 1>;
-template class handler_entry_read_single_new<3, 1>;
-template class handler_entry_read_single_new<2, 2>;
-template class handler_entry_read_single_new<3, 2>;
-template class handler_entry_read_single_new<3, 3>;
-
-template class handler_entry_write_single_new<0, 0>;
-template class handler_entry_write_single_new<1, 0>;
-template class handler_entry_write_single_new<2, 0>;
-template class handler_entry_write_single_new<3, 0>;
-template class handler_entry_write_single_new<1, 1>;
-template class handler_entry_write_single_new<2, 1>;
-template class handler_entry_write_single_new<3, 1>;
-template class handler_entry_write_single_new<2, 2>;
-template class handler_entry_write_single_new<3, 2>;
-template class handler_entry_write_single_new<3, 3>;
-
 
 
 
@@ -407,21 +387,6 @@ template<int _width_, int _ashift_> void handler_entry_write_multiple_new<_width
 	}
 }
 
-template class handler_entry_read_multiple_new<1, 0>;
-template class handler_entry_read_multiple_new<2, 0>;
-template class handler_entry_read_multiple_new<3, 0>;
-template class handler_entry_read_multiple_new<2, 1>;
-template class handler_entry_read_multiple_new<3, 1>;
-template class handler_entry_read_multiple_new<3, 2>;
-
-template class handler_entry_write_multiple_new<1, 0>;
-template class handler_entry_write_multiple_new<2, 0>;
-template class handler_entry_write_multiple_new<3, 0>;
-template class handler_entry_write_multiple_new<2, 1>;
-template class handler_entry_write_multiple_new<3, 1>;
-template class handler_entry_write_multiple_new<3, 2>;
-
-
 
 template<int _width_, int _ashift_> typename handler_entry_size<_width_>::UINTX handler_entry_read_unmapped_new<_width_, _ashift_>::read(offs_t offset, UINTX mem_mask)
 {
@@ -447,27 +412,6 @@ template<int _width_, int _ashift_> void handler_entry_write_unmapped_new<_width
 										2 << _width_, mem_mask);
 }
 
-template class handler_entry_read_unmapped_new<0, 0>;
-template class handler_entry_read_unmapped_new<1, 0>;
-template class handler_entry_read_unmapped_new<2, 0>;
-template class handler_entry_read_unmapped_new<3, 0>;
-template class handler_entry_read_unmapped_new<1, 1>;
-template class handler_entry_read_unmapped_new<2, 1>;
-template class handler_entry_read_unmapped_new<3, 1>;
-template class handler_entry_read_unmapped_new<2, 2>;
-template class handler_entry_read_unmapped_new<3, 2>;
-template class handler_entry_read_unmapped_new<3, 3>;
-
-template class handler_entry_write_unmapped_new<0, 0>;
-template class handler_entry_write_unmapped_new<1, 0>;
-template class handler_entry_write_unmapped_new<2, 0>;
-template class handler_entry_write_unmapped_new<3, 0>;
-template class handler_entry_write_unmapped_new<1, 1>;
-template class handler_entry_write_unmapped_new<2, 1>;
-template class handler_entry_write_unmapped_new<3, 1>;
-template class handler_entry_write_unmapped_new<2, 2>;
-template class handler_entry_write_unmapped_new<3, 2>;
-template class handler_entry_write_unmapped_new<3, 3>;
 
 
 template<int _width_, int _ashift_> typename handler_entry_size<_width_>::UINTX handler_entry_read_nop_new<_width_, _ashift_>::read(offs_t offset, UINTX mem_mask)
@@ -479,27 +423,6 @@ template<int _width_, int _ashift_> void handler_entry_write_nop_new<_width_, _a
 {
 }
 
-template class handler_entry_read_nop_new<0, 0>;
-template class handler_entry_read_nop_new<1, 0>;
-template class handler_entry_read_nop_new<2, 0>;
-template class handler_entry_read_nop_new<3, 0>;
-template class handler_entry_read_nop_new<1, 1>;
-template class handler_entry_read_nop_new<2, 1>;
-template class handler_entry_read_nop_new<3, 1>;
-template class handler_entry_read_nop_new<2, 2>;
-template class handler_entry_read_nop_new<3, 2>;
-template class handler_entry_read_nop_new<3, 3>;
-
-template class handler_entry_write_nop_new<0, 0>;
-template class handler_entry_write_nop_new<1, 0>;
-template class handler_entry_write_nop_new<2, 0>;
-template class handler_entry_write_nop_new<3, 0>;
-template class handler_entry_write_nop_new<1, 1>;
-template class handler_entry_write_nop_new<2, 1>;
-template class handler_entry_write_nop_new<3, 1>;
-template class handler_entry_write_nop_new<2, 2>;
-template class handler_entry_write_nop_new<3, 2>;
-template class handler_entry_write_nop_new<3, 3>;
 
 
 template<int _highbits_, int _width_, int _ashift_> handler_entry_read_dispatch_new<_highbits_, _width_, _ashift_>::handler_entry_read_dispatch_new(address_space *space, handler_entry_read_new<_width_, _ashift_> *handler) : handler_entry_read_new<_width_, _ashift_>(space, 0)
@@ -522,9 +445,57 @@ template<int _highbits_, int _width_, int _ashift_> typename handler_entry_size<
 	return m_dispatch[(offset >> _lowbits_) & BITMASK]->read(offset, mem_mask);
 }
 
-template<int _highbits_, int _width_, int _ashift_> void handler_entry_read_dispatch_new<_highbits_, _width_, _ashift_>::populate(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler)
+template<int _highbits_, int _width_, int _ashift_> void handler_entry_read_dispatch_new<_highbits_, _width_, _ashift_>::populate_nomirror(offs_t start, offs_t end, handler_entry_read_new<_width_, _ashift_> *handler)
 {
-	printf("populate called on dispatching class, implement it damnit :-)\n");
+	offs_t start_entry = start >> _lowbits_;
+	offs_t end_entry = end >> _lowbits_;
+	if(_lowbits_ <= -_ashift_) {
+		handler->ref(end_entry - start_entry);
+		for(offs_t ent = start_entry; ent <= end_entry; ent++) {
+			m_dispatch[ent]->unref();
+			m_dispatch[ent] = handler;
+		}
+
+	} else if(start_entry == end_entry) {
+		if(!(start & BOTTOM) && (end & BOTTOM) == BOTTOM) {
+			m_dispatch[start_entry]->unref();
+			m_dispatch[start_entry] = handler;
+		} else {
+			auto subdispatch = new handler_entry_read_dispatch_new<_lowbits_, _width_, _ashift_>(handler_entry_new::m_space, m_dispatch[start_entry]);
+			m_dispatch[start_entry]->unref();
+			m_dispatch[start_entry] = subdispatch;
+			subdispatch->populate_nomirror(start & BOTTOM, end & BOTTOM, handler);
+		}	
+
+	} else {
+		if(start & BOTTOM) {
+			auto subdispatch = new handler_entry_read_dispatch_new<_lowbits_, _width_, _ashift_>(handler_entry_new::m_space, m_dispatch[start_entry]);
+			m_dispatch[start_entry]->unref();
+			m_dispatch[start_entry] = subdispatch;
+			subdispatch->populate_nomirror(start & BOTTOM, BOTTOM, handler);
+			start_entry++;
+		}
+		if((end & BOTTOM) != BOTTOM) {
+			auto subdispatch = new handler_entry_read_dispatch_new<_lowbits_, _width_, _ashift_>(handler_entry_new::m_space, m_dispatch[end_entry]);
+			m_dispatch[end_entry]->unref();
+			m_dispatch[end_entry] = subdispatch;
+			subdispatch->populate_nomirror(0, end & BOTTOM, handler);
+			end_entry--;
+		}
+
+		if(start_entry <= end_entry) {
+			handler->ref(end_entry - start_entry);
+			for(offs_t ent = start_entry; ent <= end_entry; ent++) {
+				m_dispatch[ent]->unref();
+				m_dispatch[ent] = handler;
+			}
+		}
+	}
+}
+
+template<int _highbits_, int _width_, int _ashift_> void handler_entry_read_dispatch_new<_highbits_, _width_, _ashift_>::populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_read_new<_width_, _ashift_> *handler)
+{
+	abort();
 }
 
 template<int _highbits_, int _width_, int _ashift_> handler_entry_write_dispatch_new<_highbits_, _width_, _ashift_>::handler_entry_write_dispatch_new(address_space *space, handler_entry_write_new<_width_, _ashift_> *handler) : handler_entry_write_new<_width_, _ashift_>(space, 0)
@@ -547,43 +518,57 @@ template<int _highbits_, int _width_, int _ashift_> void handler_entry_write_dis
 	m_dispatch[(offset >> _lowbits_) & BITMASK]->write(offset, data, mem_mask);
 }
 
-template<int _highbits_, int _width_, int _ashift_> void handler_entry_write_dispatch_new<_highbits_, _width_, _ashift_>::populate(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler)
+template<int _highbits_, int _width_, int _ashift_> void handler_entry_write_dispatch_new<_highbits_, _width_, _ashift_>::populate_nomirror(offs_t start, offs_t end, handler_entry_write_new<_width_, _ashift_> *handler)
 {
-	printf("populate called on dispatching class, implement it damnit :-)\n");
+	offs_t start_entry = start >> _lowbits_;
+	offs_t end_entry = end >> _lowbits_;
+	if(_lowbits_ <= -_ashift_) {
+		handler->ref(end_entry - start_entry);
+		for(offs_t ent = start_entry; ent <= end_entry; ent++) {
+			m_dispatch[ent]->unref();
+			m_dispatch[ent] = handler;
+		}
+
+	} else if(start_entry == end_entry) {
+		if(!(start & BOTTOM) && (end & BOTTOM) == BOTTOM) {
+			m_dispatch[start_entry]->unref();
+			m_dispatch[start_entry] = handler;
+		} else {
+			auto subdispatch = new handler_entry_write_dispatch_new<_lowbits_, _width_, _ashift_>(handler_entry_new::m_space, m_dispatch[start_entry]);
+			m_dispatch[start_entry]->unref();
+			m_dispatch[start_entry] = subdispatch;
+			subdispatch->populate_nomirror(start & BOTTOM, end & BOTTOM, handler);
+		}	
+
+	} else {
+		if(start & BOTTOM) {
+			auto subdispatch = new handler_entry_write_dispatch_new<_lowbits_, _width_, _ashift_>(handler_entry_new::m_space, m_dispatch[start_entry]);
+			m_dispatch[start_entry]->unref();
+			m_dispatch[start_entry] = subdispatch;
+			subdispatch->populate_nomirror(start & BOTTOM, BOTTOM, handler);
+			start_entry++;
+		}
+		if((end & BOTTOM) != BOTTOM) {
+			auto subdispatch = new handler_entry_write_dispatch_new<_lowbits_, _width_, _ashift_>(handler_entry_new::m_space, m_dispatch[end_entry]);
+			m_dispatch[end_entry]->unref();
+			m_dispatch[end_entry] = subdispatch;
+			subdispatch->populate_nomirror(0, end & BOTTOM, handler);
+			end_entry--;
+		}
+
+		if(start_entry <= end_entry) {
+			handler->ref(end_entry - start_entry);
+			for(offs_t ent = start_entry; ent <= end_entry; ent++) {
+				m_dispatch[ent]->unref();
+				m_dispatch[ent] = handler;
+			}
+		}
+	}
 }
 
-
-
-template class handler_entry_read_dispatch_new<31, 0, 0>;
-template class handler_entry_read_dispatch_new<31, 1, 0>;
-template class handler_entry_read_dispatch_new<31, 2, 0>;
-template class handler_entry_read_dispatch_new<31, 3, 0>;
-template class handler_entry_read_dispatch_new<31, 1, 1>;
-template class handler_entry_read_dispatch_new<31, 2, 1>;
-template class handler_entry_read_dispatch_new<31, 3, 1>;
-template class handler_entry_read_dispatch_new<31, 2, 2>;
-template class handler_entry_read_dispatch_new<31, 3, 2>;
-template class handler_entry_read_dispatch_new<31, 3, 3>;
-
-template class handler_entry_write_dispatch_new<31, 0, 0>;
-template class handler_entry_write_dispatch_new<31, 1, 0>;
-template class handler_entry_write_dispatch_new<31, 2, 0>;
-template class handler_entry_write_dispatch_new<31, 3, 0>;
-template class handler_entry_write_dispatch_new<31, 1, 1>;
-template class handler_entry_write_dispatch_new<31, 2, 1>;
-template class handler_entry_write_dispatch_new<31, 3, 1>;
-template class handler_entry_write_dispatch_new<31, 2, 2>;
-template class handler_entry_write_dispatch_new<31, 3, 2>;
-template class handler_entry_write_dispatch_new<31, 3, 3>;
-
-
-
-
-
-
-
-
-
+template<int _highbits_, int _width_, int _ashift_> void handler_entry_write_dispatch_new<_highbits_, _width_, _ashift_>::populate_mirror(offs_t start, offs_t end, offs_t mirror, handler_entry_write_new<_width_, _ashift_> *handler)
+{
+}
 
 
 // ======================> handler_entry
@@ -1204,6 +1189,7 @@ template<int _width_, int _ashift_, endianness_t _Endian, bool _Large>
 class address_space_specific : public address_space
 {
 	typedef typename handler_entry_size<_width_>::UINTX _NativeType;
+	typedef typename handler_entry_size<_width_>::UINTX UINTX;
 	typedef address_space_specific<_width_, _ashift_, _Endian, _Large> this_type;
 
 	// constants describing the native size
@@ -2257,166 +2243,166 @@ address_space &address_space::allocate(memory_manager &manager, const address_sp
 	// allocate one of the appropriate type
 	bool large = (config.addr2byte_end(0xffffffffUL >> (32 - config.m_addrbus_width)) >= (1 << 18));
 
-	switch (config.data_width() | (-config.addr_shift()))
+	switch (config.data_width() | (config.addr_shift() + 4))
 	{
-		case  8|0:
+		case  8|(4-0):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<0, 0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<0,  0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<0, 0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<0,  0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<0, 0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<0,  0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<0, 0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<0,  0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 16|0:
+		case 16|(4-0):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<1, 0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1,  0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<1, 0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1,  0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<1, 0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1,  0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<1, 0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1,  0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 16|1:
+		case 16|(4-1):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<1, 1, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1, -1, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<1, 1, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1, -1, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<1, 1, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1, -1, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<1, 1, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<1, -1, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 32|0:
+		case 32|(4-0):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<2, 0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2,  0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<2, 0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2,  0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<2, 0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2,  0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<2, 0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2,  0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 32|1:
+		case 32|(4-1):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<2, 1, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -1, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<2, 1, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -1, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<2, 1, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -1, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<2, 1, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -1, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 32|2:
+		case 32|(4-2):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<2, 2, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -2, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<2, 2, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -2, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<2, 2, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -2, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<2, 2, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<2, -2, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 64|0:
+		case 64|(4-0):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<3, 0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3,  0, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3,  0, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<3, 0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3,  0, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3,  0, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 64|1:
+		case 64|(4-1):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<3, 1, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -1, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 1, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -1, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<3, 1, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -1, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 1, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -1, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 64|2:
+		case 64|(4-2):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<3, 2, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -2, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 2, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -2, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<3, 2, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -2, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 2, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -2, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 
-		case 64|3:
+		case 64|(4-3):
 			if (config.endianness() == ENDIANNESS_LITTLE)
 			{
 				if (large)
-					return *new address_space_specific<3, 3, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -3, ENDIANNESS_LITTLE, true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 3, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -3, ENDIANNESS_LITTLE, false>(manager, memory, spacenum, config.addr_width());
 			}
 			else
 			{
 				if (large)
-					return *new address_space_specific<3, 3, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -3, ENDIANNESS_BIG,    true >(manager, memory, spacenum, config.addr_width());
 				else
-					return *new address_space_specific<3, 3, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
+					return *new address_space_specific<3, -3, ENDIANNESS_BIG,    false>(manager, memory, spacenum, config.addr_width());
 			}
 	}
 	throw emu_fatalerror("Invalid width %d specified for address_space::allocate", config.data_width());
@@ -3082,6 +3068,9 @@ template<int _width_, int _ashift_, endianness_t _Endian, bool _Large> void addr
 		std::string fulltag = device().siblingtag(rtag);
 		memory_bank &bank = bank_find_or_allocate(fulltag.c_str(), addrstart, addrend, addrmirror, ROW_READ);
 		read().map_range(nstart, nend, nmask, nmirror, bank.index());
+		auto hand_r = new handler_entry_read_memory_bank_new<_width_, _ashift_>(this, bank);
+		hand_r->set_address_info(nstart, nmask);
+		m_root_read->populate(nstart, nend, nmirror, hand_r);
 	}
 
 	// map the write bank
@@ -3090,6 +3079,10 @@ template<int _width_, int _ashift_, endianness_t _Endian, bool _Large> void addr
 		std::string fulltag = device().siblingtag(wtag);
 		memory_bank &bank = bank_find_or_allocate(fulltag.c_str(), addrstart, addrend, addrmirror, ROW_WRITE);
 		write().map_range(nstart, nend, nmask, nmirror, bank.index());
+
+		auto hand_w = new handler_entry_write_memory_bank_new<_width_, _ashift_>(this, bank);
+		hand_w->set_address_info(nstart, nmask);
+		m_root_write->populate(nstart, nend, nmirror, hand_w);
 	}
 
 	// update the memory dump
@@ -3167,6 +3160,11 @@ template<int _width_, int _ashift_, endianness_t _Endian, bool _Large> void addr
 			memory_block &block = manager().m_blocklist.append(*global_alloc(memory_block(*this, address_to_byte(addrstart), address_to_byte_end(addrend))));
 			bank.set_base(block.data());
 		}
+
+		auto hand_r = new handler_entry_read_memory_new<_width_, _ashift_>(this);
+		hand_r->set_base(static_cast<UINTX *>(bank.base()));
+		hand_r->set_address_info(nstart, nmask);
+		m_root_read->populate(nstart, nend, nmirror, hand_r);
 	}
 
 	// map for write
@@ -3196,6 +3194,11 @@ template<int _width_, int _ashift_, endianness_t _Endian, bool _Large> void addr
 			memory_block &block = manager().m_blocklist.append(*global_alloc(memory_block(*this, address_to_byte(addrstart), address_to_byte_end(addrend))));
 			bank.set_base(block.data());
 		}
+
+		auto hand_w = new handler_entry_write_memory_new<_width_, _ashift_>(this);
+		hand_w->set_base(static_cast<UINTX *>(bank.base()));
+		hand_w->set_address_info(nstart, nmask);
+		m_root_write->populate(nstart, nend, nmirror, hand_w);
 	}
 }
 
