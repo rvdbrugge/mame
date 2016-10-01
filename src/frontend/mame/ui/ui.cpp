@@ -284,6 +284,9 @@ void mame_ui_manager::display_startup_screens(bool first_time)
 	bool show_warnings = true, show_mandatory_fileman = true;
 	int state;
 
+	// HACK disable all startup screens
+	show_gameinfo = show_warnings = show_mandatory_fileman = false;
+	
 	// disable everything if we are using -str for 300 or fewer seconds, or if we're the empty driver,
 	// or if we are debugging
 	if (!first_time || (str > 0 && str < 60*5) || &machine().system() == &GAME_NAME(___empty) || (machine().debug_flags & DEBUG_FLAG_ENABLED) != 0)
